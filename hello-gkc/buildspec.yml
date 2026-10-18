@@ -4,18 +4,13 @@ env:
   variables:
     AWS_REGION: us-east-1
     ECR_REPO: spring-demo
-    CLUSTER_NAME: spring-eks-cluster
+    ECS_CLUSTER: spring-ecs-cluster
+    ECS_SERVICE: spring-service
 
 phases:
   install:
     runtime-versions:
       java: corretto17
-    commands:
-      - echo Installing kubectl
-      - curl -LO "https://dl.k8s.io/release/v1.29.0/bin/linux/amd64/kubectl"
-      - chmod +x kubectl
-      - mv kubectl /usr/local/bin/
-      - kubectl version --client
 
   pre_build:
     commands:
@@ -45,12 +40,8 @@ phases:
       - echo Pushing Docker image to ECR
       - docker push $ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPO:latest
 
-      - echo Updating kubeconfig
-      - aws eks update-kubeconfig --region $AWS_REGION --name $CLUSTER_NAME
-
-      - echo Deploying to EKS
-      - kubectl apply -f k8s/deployment.yaml
-      - kubectl apply -f k8s/service.yaml
+      - echo Updating Amazon ECS Service
+      - aws ecs update-service --cluster $ECS_CLUSTER --service $ECS_SERVICE --force-new-deployment --region $AWS_REGION
 
 artifacts:
   files:
