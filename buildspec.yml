@@ -6,6 +6,7 @@ env:
     ECR_REPO: spring-demo
     ECS_CLUSTER: spring-ecs-cluster
     ECS_SERVICE: mytask-service
+    TASK_DEF_FAMILY: mytask
 
 phases:
   install:
@@ -42,9 +43,8 @@ phases:
       - docker push $ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPO:latest
 
       - echo Generating a new ECS task definition with the latest image URI
-      - TASK_DEF_JSON=$(aws ecs describe-task-definition --task-definition mytask-service --region $AWS_REGION)
+      - TASK_DEF_JSON=$(aws ecs describe-task-definition --task-definition $TASK_DEF_FAMILY --region $AWS_REGION)
       
-      # Clean up the output to make a valid registration template, updating the image path
       - NEW_TASK_DEF=$(echo $TASK_DEF_JSON | jq --arg IMAGE "$ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPO:latest" '.taskDefinition | .containerDefinitions[0].image = $IMAGE | del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy)')
       
       - echo Registering new task definition revision
@@ -52,7 +52,8 @@ phases:
       - NEW_REVISION=$(echo $NEW_TASK_INFO | jq '.taskDefinition.revision')
 
       - echo Updating Amazon ECS Service to use the new revision
-      - aws ecs update-service --cluster $ECS_CLUSTER --service $ECS_SERVICE --task-definition mytask-service:$NEW_REVISION --force-new-gradient --region $AWS_REGION
+      - aws ecs update-service --cluster $ECS_CLUSTER --service $ECS_SERVICE --task-definition $TASK_DEF_FAMILY:$NEW_REVISION --force-new-deployment --region $AWS_REGION
+  
   
 artifacts:
   files:
