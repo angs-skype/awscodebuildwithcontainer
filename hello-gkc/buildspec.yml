@@ -5,7 +5,7 @@ env:
     AWS_REGION: us-west-2
     ECR_REPO: spring-demo
     ECS_CLUSTER: spring-ecs-cluster
-    ECS_SERVICE: spring-service
+    ECS_SERVICE: mytask-service
 
 phases:
   install:
